@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blizzard</title>
+<style>
+  :root{
+    --deep:#06121f; --night:#0c2036; --mid:#16365a; --steel:#2b5a88;
+    --line:rgba(143,184,220,.16); --panel:rgba(12,32,54,.82);
+    --ice:#8fb8dc; --ice-hi:#d9ecfb; --text:#e8f1fb; --muted:#8ea9c4;
+    --accent:#4f8fd1; --ok:#6fd3b0; --bad:#f08c8c;
+    --serif:Georgia,"Iowan Old Style",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font-family:var(--sans);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(120% 70% at 15% 0%, var(--steel) 0%, transparent 55%),
+      radial-gradient(90% 60% at 100% 100%, #1d4670 0%, transparent 60%),
+      linear-gradient(170deg, var(--mid), var(--deep));
+    background-attachment:fixed;
+  }
+  button,input,select,textarea{font:inherit;color:inherit}
+  #app{display:grid;grid-template-columns:260px 1fr 300px;height:100vh}
+  #app.nopanel{grid-template-columns:260px 1fr}
+  #app.nopanel #right{display:none}
+
+  /* sidebar */
+  #side{background:var(--panel);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:10px;min-height:0}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:22px;color:#fff;margin:0 4px 8px}
+  .mark{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#e9f5ff,var(--ice));color:var(--deep);font-size:17px;box-shadow:0 4px 14px -4px rgba(143,184,220,.7)}
+  .label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:12px 6px 4px}
+  #chatList{display:flex;flex-direction:column;gap:3px;overflow:auto;min-height:0}
+  .conv{padding:9px 11px;border-radius:10px;cursor:pointer;font-size:14px;color:#c8daee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .conv:hover{background:rgba(143,184,220,.08)}
+  .conv.on{background:rgba(79,143,209,.22);color:#fff;box-shadow:inset 2px 0 0 var(--ice)}
+  .grow{flex:1}
+  select{width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:rgba(6,18,31,.6);outline:none}
+  select option{background:var(--night)}
+
+  button{cursor:pointer;border:0;border-radius:10px;transition:background .15s,opacity .15s}
+  button:disabled{opacity:.45;cursor:default}
+  .ghost-btn{background:transparent;border:1px solid var(--line);color:#c8daee;padding:9px 12px;text-align:left}
+  .ghost-btn:hover{background:rgba(143,184,220,.08);color:#fff}
+  .danger{background:transparent;border:1px solid rgba(240,140,140,.35);color:var(--bad);padding:7px 12px;font-size:13px}
+  .danger:hover{background:rgba(240,140,140,.1)}
+  .send{background:linear-gradient(180deg,#6aa6e0,var(--accent));color:#fff;padding:9px 18px;font-weight:600}
+  .send:hover:not(:disabled){filter:brightness(1.08)}
+  .pill{background:rgba(143,184,220,.1);border:1px solid var(--line);color:#c8daee;padding:7px 12px;font-size:13px}
+  .pill.on{background:rgba(79,143,209,.35);border-color:var(--ice);color:#fff}
+
+  /* main */
+  #main{display:flex;flex-direction:column;min-height:0}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 26px;border-bottom:1px solid var(--line);background:rgba(6,18,31,.35)}
+  h1{font-family:var(--serif);font-weight:400;font-size:22px;margin:0;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #messages{flex:1;overflow:auto;padding:24px 26px;display:flex;flex-direction:column;gap:14px;min-height:0}
+  .row{display:flex;max-width:760px;width:100%}
+  .row.user{justify-content:flex-end;margin-left:auto}
+  .bubble{padding:12px 16px;border-radius:16px;line-height:1.6;font-size:15px;white-space:pre-wrap;max-width:100%}
+  .row.assistant .bubble{background:rgba(12,32,54,.9);border:1px solid var(--line);border-bottom-left-radius:4px}
+  .row.user .bubble{background:linear-gradient(180deg,#2d64a0,#24527f);color:#fff;border-bottom-right-radius:4px}
+  .row.error .bubble{background:rgba(240,140,140,.08);border:1px solid rgba(240,140,140,.35);color:#f5b3b3}
+  .hint{margin:auto;text-align:center;color:var(--muted);font-family:var(--serif);font-size:20px;max-width:420px;line-height:1.6}
+
+  footer{padding:14px 26px 20px;border-top:1px solid var(--line);background:rgba(6,18,31,.35)}
+  #status{font-size:13px;color:var(--muted);min-height:20px;margin-bottom:6px}
+  #status.ready{color:var(--ok)} #status.error{color:var(--bad)} #status.busy,#status.setup{color:var(--ice)}
+  .composer{max-width:760px;margin:0 auto;background:rgba(12,32,54,.95);border:1px solid var(--line);border-radius:16px;padding:12px 12px 10px 16px;display:flex;flex-direction:column;gap:8px}
+  #input{width:100%;resize:none;border:0;outline:none;background:transparent;font-size:15px;min-height:26px;max-height:160px;padding:2px 0}
+  #input::placeholder{color:#6f8aa8}
+  .bar{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+  .bar .grow{flex:1}
+
+  /* right panel */
+  #right{background:var(--panel);border-left:1px solid var(--line);padding:22px 20px;overflow:auto;min-height:0}
+  .ring{width:124px;height:124px;border-radius:50%;margin:8px auto 4px;display:grid;place-items:center}
+  .ring-in{width:98px;height:98px;border-radius:50%;background:var(--night);display:grid;place-items:center;font-family:var(--serif);font-size:30px;color:#fff}
+  .note{font-size:12px;color:var(--muted);line-height:1.55;margin:12px 0 0}
+  .topic{padding:12px 0;border-bottom:1px solid var(--line)}
+  .topic:last-child{border-bottom:0}
+  .topic .top{display:flex;justify-content:space-between;gap:8px;font-size:14px;color:#dbe8f6}
+  .topic .top span:last-child{color:var(--muted);font-variant-numeric:tabular-nums}
+  .track{height:6px;border-radius:99px;background:rgba(143,184,220,.14);margin-top:8px;overflow:hidden}
+  .fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--ice));transition:width .6s ease}
+  .evidence{font-size:12px;color:var(--muted);font-style:italic;margin-top:7px;line-height:1.45}
+
+  /* settings */
+  .modal{position:fixed;inset:0;background:rgba(3,10,18,.6);display:grid;place-items:center;z-index:10}
+  .modal[hidden]{display:none}
+  .card{width:min(460px,92vw);background:var(--night);border:1px solid var(--line);border-radius:18px;padding:26px;display:flex;flex-direction:column;gap:10px}
+  .card h2{font-family:var(--serif);font-weight:400;margin:0 0 4px;color:#fff;font-size:24px}
+  .card input[type=password]{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(6,18,31,.7);outline:none}
+  .check{display:flex;align-items:center;gap:8px;font-size:14px;color:#c8daee;margin-top:6px}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<div id="app" class="">
+  <aside id="side">
+    <div class="brand"><span class="mark">❄</span>Blizzard</div>
+    <button id="newBtn" class="ghost-btn">+ New chat</button>
+    <div class="label">Chats</div>
+    <div id="chatList"></div>
+    <div class="grow"></div>
+    <div class="label">Model</div>
+    <select id="model" title="Choose the AI model"></select>
+    <button id="settingsBtn" class="ghost-btn">Settings</button>
+  </aside>
+
+  <main id="main">
+    <header>
+      <h1 id="title"></h1>
+      <button id="delChat" class="danger">Delete chat</button>
+    </header>
+    <div id="messages"></div>
+    <footer>
+      <div id="status"></div>
+      <div class="composer">
+        <textarea id="input" rows="1" placeholder="Explain it in your own words, or ask a question"></textarea>
+        <div class="bar">
+          <button id="webBtn" class="pill">Web search: off</button>
+          <span class="grow"></span>
+          <button id="sendBtn" class="send">Send</button>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <aside id="right">
+    <div class="label">Understanding</div>
+    <div id="progress"></div>
+    <p class="note">Measured only from what you explain and get right. The tutor's explanations don't count, and the bar moves gradually.</p>
+  </aside>
+</div>
+
+<div id="settings" class="modal" hidden>
+  <div class="card">
+    <h2>Settings</h2>
+    <label class="label" for="keyInput">Brave Search key (for web search)</label>
+    <input id="keyInput" type="password" placeholder="Paste your key here">
+    <p class="note">How to get a key: open brave.com/search/api, create a free account, choose the free plan for the Search API, then copy the API key shown in your dashboard. The key is stored only on this computer.</p>
+    <label class="check"><input id="track" type="checkbox"> Track my understanding</label>
+    <div class="bar" style="margin-top:8px">
+      <button id="cancelSettings" class="ghost-btn" style="width:auto">Cancel</button>
+      <span class="grow"></span>
+      <button id="saveSettings" class="send">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const { invoke } = window.__TAURI__.core;
+const { listen } = window.__TAURI__.event;
+const $ = id => document.getElementById(id);
+
+// To add a model later, add one line here. Its name shows in the dropdown.
+const MODELS = [{ name: "LFM3-Omni-2B", repo: "LiquidAI/LFM3-Omni-2B-GGUF:Q4_K_M" }];
+const SYSTEM = "You are a patient tutor. Answer clearly and briefly, in the language the student uses. When the student seems to understand something, ask them to explain it back in their own words. Correct mistakes gently. If web results are given, use them and name the sources.";
+
+let chats = [], activeId = null, settings = null, busy = false, webOn = false;
+let streamNode = null, streamText = "", frame = null;
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+const active = () => chats.find(c => c.id === activeId) || null;
+const overall = c => c.topics.length ? Math.round(c.topics.reduce((a, t) => a + t.score, 0) / c.topics.length) : 0;
+const persist = () => invoke("save_chats", { json: JSON.stringify(chats) }).catch(console.error);
+
+function showStatus(message, state = "") {
+  const s = $("status");
+  s.textContent = message;
+  s.className = state;
+}
+
+function newChat() {
+  const c = { id: uid(), title: "New chat", messages: [], topics: [], history: [0] };
+  chats.unshift(c);
+  activeId = c.id;
+  persist();
+  render();
+}
+
+function render() {
+  renderSide();
+  renderChat();
+  renderProgress();
+  $("app").classList.toggle("nopanel", !settings.track_understanding);
+  $("webBtn").textContent = "Web search: " + (webOn ? "on" : "off");
+  $("webBtn").classList.toggle("on", webOn);
+}
+
+function renderSide() {
+  const list = $("chatList");
+  list.innerHTML = "";
+  chats.forEach(c => {
+    const d = document.createElement("div");
+    d.className = "conv" + (c.id === activeId ? " on" : "");
+    d.textContent = c.title;
+    d.onclick = () => { activeId = c.id; render(); };
+    list.append(d);
+  });
+}
+
+function renderChat() {
+  const box = $("messages");
+  const c = active();
+  box.innerHTML = "";
+  $("title").textContent = c ? c.title : "";
+  if (!c) return;
+  if (!c.messages.length) {
+    const hint = document.createElement("div");
+    hint.className = "hint";
+    hint.textContent = "Ask anything you want to study. Explain things in your own words as you go.";
+    box.append(hint);
+  }
+  c.messages.forEach(m => {
+    const row = document.createElement("div");
+    row.className = "row " + m.role;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = m.content;
+    row.append(bubble);
+    box.append(row);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+
+function renderProgress() {
+  const box = $("progress");
+  const c = active();
+  box.innerHTML = "";
+  if (!c) return;
+  const pr = overall(c);
+
+  const ring = document.createElement("div");
+  ring.className = "ring";
+  ring.style.background = `conic-gradient(var(--accent) ${pr * 3.6}deg, rgba(143,184,220,.14) 0)`;
+  const inner = document.createElement("div");
+  inner.className = "ring-in";
+  inner.textContent = pr + "%";
+  ring.append(inner);
+  box.append(ring);
+
+  c.topics.forEach(t => {
+    const row = document.createElement("div");
+    row.className = "topic";
+    const top = document.createElement("div");
+    top.className = "top";
+    const name = document.createElement("span");
+    name.textContent = t.name;
+    const pct = document.createElement("span");
+    pct.textContent = t.score + "%";
+    top.append(name, pct);
+    const track = document.createElement("div");
+    track.className = "track";
+    const fill = document.createElement("div");
+    fill.className = "fill";
+    fill.style.width = t.score + "%";
+    track.append(fill);
+    row.append(top, track);
+    if (t.evidence) {
+      const ev = document.createElement("div");
+      ev.className = "evidence";
+      ev.textContent = "“" + t.evidence + "”";
+      row.append(ev);
+    }
+    box.append(row);
+  });
+}
+
+function paintStream() {
+  frame = null;
+  if (streamNode) {
+    streamNode.textContent = streamText;
+    const box = $("messages");
+    box.scrollTop = box.scrollHeight;
+  }
+}
+
+async function send() {
+  const input = $("input");
+  const text = input.value.trim();
+  const c = active();
+  if (!text || !c || busy) return;
+
+  input.value = "";
+  autoGrow();
+  if (c.title === "New chat") c.title = text.slice(0, 48);
+  c.messages.push({ role: "user", content: text });
+  const ai = { role: "assistant", content: "" };
+  c.messages.push(ai);
+  render();
+  streamNode = $("messages").lastElementChild.querySelector(".bubble");
+  streamText = "";
+  busy = true;
+  $("sendBtn").disabled = true;
+
+  let prompt = text;
+  if (webOn) {
+    showStatus("Searching the web…", "busy");
+    try {
+      const results = await invoke("web_search", { query: text });
+      if (results) prompt = "Web results:\n" + results + "\nStudent question: " + text;
+    } catch (e) {
+      showStatus(String(e), "error");
+    }
+  }
+
+  // The last six earlier messages give continuity without slowing the reply down.
+  const history = c.messages.slice(0, -2).slice(-6).map(m => ({ role: m.role, content: m.content }));
+  try {
+    showStatus("Thinking…", "busy");
+    const full = await invoke("ask", {
+      messages: [{ role: "system", content: SYSTEM }, ...history, { role: "user", content: prompt }],
+      stream: true,
+      maxTokens: 300
+    });
+    ai.content = full;
+    if (streamNode) streamNode.textContent = full;
+    showStatus("Ready", "ready");
+  } catch (e) {
+    c.messages.pop();
+    c.messages.push({ role: "error", content: String(e) });
+    showStatus("Something went wrong", "error");
+  }
+
+  busy = false;
+  streamNode = null;
+  $("sendBtn").disabled = false;
+  persist();
+  render();
+
+  if (settings.track_understanding && text.length >= 25 && ai.content) updateUnderstanding(c);
+}
+
+// Runs in the background, so you can keep asking while it updates.
+async function updateUnderstanding(c) {
+  try {
+    const recent = c.messages.slice(-6).map(m => (m.role === "user" ? "STUDENT: " : "TUTOR: ") + m.content).join("\n");
+    const known = c.topics.map(t => `${t.name} (${t.score}%)`).join("; ") || "none";
+    const out = await invoke("ask", {
+      messages: [
+        { role: "system", content: "You assess a student's understanding. Only the STUDENT's words count as evidence. Reply with JSON only." },
+        { role: "user", content: `Conversation:\n${recent}\n\nTopics tracked: ${known}.\nFor each topic the student engaged with, give understanding 0-100 from their own words: correct reasoning raises it, errors or "I don't know" lower it, topics only explained by the tutor stay low. Keep the current score if nothing new. Return ONLY JSON: {"topics":[{"name":"...","understanding":0,"evidence":"short summary of what the student said"}]}` }
+      ],
+      stream: false,
+      maxTokens: 200
+    });
+    const j = JSON.parse(out.match(/\{[\s\S]*\}/)[0]);
+    for (const t of j.topics || []) {
+      if (!t.name) continue;
+      let topic = c.topics.find(x => x.name.toLowerCase() === t.name.toLowerCase());
+      if (!topic) {
+        if (c.topics.length >= 12) continue;
+        topic = { name: t.name, score: 0, evidence: "" };
+        c.topics.push(topic);
+      }
+      const target = Math.max(0, Math.min(100, Number(t.understanding) || 0));
+      const delta = Math.max(-30, Math.min(30, target - topic.score));
+      topic.score = Math.round(Math.max(0, Math.min(100, topic.score + delta * 0.6)));
+      if (t.evidence) topic.evidence = String(t.evidence);
+    }
+    c.history.push(overall(c));
+    persist();
+    render();
+  } catch (e) {
+    // If the update fails, the chat keeps working without the graphic.
+  }
+}
+
+function autoGrow() {
+  const t = $("input");
+  t.style.height = "auto";
+  t.style.height = Math.min(t.scrollHeight, 160) + "px";
+}
+
+function fillModels() {
+  const sel = $("model");
+  sel.innerHTML = "";
+  MODELS.forEach(m => sel.append(new Option(m.name, m.name)));
+  const current = MODELS.find(m => m.repo === settings.model_repo) || MODELS[0];
+  sel.value = current.name;
+}
+
+function openSettings() {
+  $("keyInput").value = settings.brave_key || "";
+  $("track").checked = !!settings.track_understanding;
+  $("settings").hidden = false;
+}
+
+async function saveSettings() {
+  const before = settings.model_repo;
+  settings.brave_key = $("keyInput").value.trim();
+  settings.track_understanding = $("track").checked;
+  settings.model_repo = MODELS.find(m => m.name === $("model").value).repo;
+  await invoke("save_settings", { settings });
+  if (settings.model_repo !== before) await invoke("restart_engine");
+  $("settings").hidden = true;
+  render();
+}
+
+async function init() {
+  settings = await invoke("get_settings");
+  try { chats = JSON.parse(await invoke("load_chats")); } catch { chats = []; }
+  if (!Array.isArray(chats)) chats = [];
+  activeId = chats.length ? chats[0].id : null;
+  if (!activeId) newChat();
+  fillModels();
+  render();
+
+  await listen("status", e => {
+    const { state, message } = e.payload;
+    showStatus(state === "ready" ? "Ready" : message, state);
+  });
+  await listen("token", e => {
+    if (!streamNode) return;
+    streamText += e.payload;
+    if (frame === null) frame = requestAnimationFrame(paintStream);
+  });
+
+  $("sendBtn").onclick = send;
+  $("input").addEventListener("input", autoGrow);
+  $("input").addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+  $("newBtn").onclick = newChat;
+  $("delChat").onclick = () => {
+    const c = active();
+    if (!c || !confirm(`Delete "${c.title}"?`)) return;
+    chats = chats.filter(x => x.id !== c.id);
+    activeId = chats.length ? chats[0].id : null;
+    if (!activeId) newChat(); else { persist(); render(); }
+  };
+  $("webBtn").onclick = () => {
+    if (!settings.brave_key) {
+      openSettings();
+      showStatus("Add a Brave Search key to use web search.", "error");
+      return;
+    }
+    webOn = !webOn;
+    render();
+  };
+  $("settingsBtn").onclick = openSettings;
+  $("cancelSettings").onclick = () => { $("settings").hidden = true; };
+  $("saveSettings").onclick = saveSettings;
+}
+
+init();
+</script>
+</body>
+</html>
