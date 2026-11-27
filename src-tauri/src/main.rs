@@ -14,7 +14,7 @@ use std::{
 };
 use tauri::{AppHandle, Emitter, Manager};
 
-const DEFAULT_MODEL: &str = "LiquidAI/LFM3-Omni-2B-GGUF:Q4_K_M";
+const DEFAULT_MODEL: &str = "LiquidAI/LFM3-Omni-2B-GGUF";
 const PORT: u16 = 8787;
 
 struct Engine(Mutex<Option<Child>>);
@@ -28,7 +28,7 @@ struct Status {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
 struct Settings {
-    brave_key: String,
+    tavily_key: String,
     track_understanding: bool,
     model_repo: String,
 }
@@ -36,7 +36,7 @@ struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            brave_key: String::new(),
+            tavily_key: String::new(),
             track_understanding: true,
             model_repo: DEFAULT_MODEL.into(),
         }
@@ -80,7 +80,8 @@ async fn engine_healthy() -> bool {
         .unwrap_or(false)
 }
 
-/// Downloads the official llama.cpp build for this OS once, then keeps it in the app folder.
+/// Downloads the official llama.cpp build for this system once, into the app folder.
+/// Some releases ship .zip files and others ship .tar.gz, so both are handled.
 async fn install_engine(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = data_dir(app).join("engine");
     let exe = dir.join(engine_name());
@@ -101,8 +102,9 @@ async fn install_engine(app: &AppHandle) -> Result<PathBuf, String> {
         .user_agent("blizzard")
         .build()
         .map_err(|e| e.to_string())?;
-    let release: serde_json::Value = client
-        .get("https://api.github.com/repos/ggml-org/llama.cpp/releases/latest")
+    // The "latest" release is not always the one with binaries, so search the recent releases.
+    let releases: Vec<serde_json::Value> = client
+        .get("https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=15")
         .send()
         .await
         .map_err(|e| e.to_string())?
@@ -110,15 +112,29 @@ async fn install_engine(app: &AppHandle) -> Result<PathBuf, String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    let url = release["assets"]
-        .as_array()
-        .and_then(|assets| {
-            assets.iter().find(|a| {
-                a["name"].as_str().map_or(false, |n| n.contains(wanted) && n.ends_with(".zip"))
+    let mut chosen: Option<serde_json::Value> = None;
+    let mut seen: Vec<String> = Vec::new();
+    for rel in &releases {
+        let assets = rel["assets"].as_array().cloned().unwrap_or_default();
+        seen.extend(assets.iter().filter_map(|a| a["name"].as_str().map(String::from)));
+        let found = assets.iter().find(|a| {
+            a["name"].as_str().map_or(false, |n| {
+                n.contains(wanted) && (n.ends_with(".zip") || n.ends_with(".tar.gz"))
             })
-        })
-        .and_then(|a| a["browser_download_url"].as_str())
-        .ok_or_else(|| format!("No llama.cpp build found for {wanted}"))?
+        });
+        if let Some(a) = found {
+            chosen = Some(a.clone());
+            break;
+        }
+    }
+    let chosen = chosen.ok_or_else(|| {
+        format!("No llama.cpp build for {wanted}. Files found: {}", seen.join(", "))
+    })?;
+
+    let archive_name = chosen["name"].as_str().unwrap_or_default().to_string();
+    let url = chosen["browser_download_url"]
+        .as_str()
+        .ok_or("The download link is missing")?
         .to_string();
 
     let bytes = client
@@ -132,19 +148,52 @@ async fn install_engine(app: &AppHandle) -> Result<PathBuf, String> {
         .to_vec();
 
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| e.to_string())?;
-    for i in 0..zip.len() {
-        let mut file = zip.by_index(i).map_err(|e| e.to_string())?;
-        if file.is_dir() {
-            continue;
+
+    if archive_name.ends_with(".zip") {
+        let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| e.to_string())?;
+        for i in 0..zip.len() {
+            let mut file = zip.by_index(i).map_err(|e| e.to_string())?;
+            if file.is_dir() {
+                continue;
+            }
+            // Flatten the archive: the server and its libraries sit side by side.
+            let name = match file.name().rsplit('/').next() {
+                Some(n) if !n.is_empty() => n.to_string(),
+                _ => continue,
+            };
+            let mut out = fs::File::create(dir.join(&name)).map_err(|e| e.to_string())?;
+            std::io::copy(&mut file, &mut out).map_err(|e| e.to_string())?;
         }
-        // Flatten the archive: the server and its libraries sit side by side.
-        let name = match file.name().rsplit('/').next() {
-            Some(n) if !n.is_empty() => n.to_string(),
-            _ => continue,
-        };
-        let mut out = fs::File::create(dir.join(&name)).map_err(|e| e.to_string())?;
-        std::io::copy(&mut file, &mut out).map_err(|e| e.to_string())?;
+    } else {
+        let gz = flate2::read::GzDecoder::new(Cursor::new(bytes));
+        let mut tar = tar::Archive::new(gz);
+        // Symlinks (for example libllama.so -> libllama.so.0) are recreated as copies.
+        let mut links: Vec<(String, String)> = Vec::new();
+        for entry in tar.entries().map_err(|e| e.to_string())? {
+            let mut entry = entry.map_err(|e| e.to_string())?;
+            let path = entry.path().map_err(|e| e.to_string())?.to_path_buf();
+            let name = match path.file_name() {
+                Some(n) => n.to_string_lossy().to_string(),
+                None => continue,
+            };
+            let kind = entry.header().entry_type();
+            if kind.is_symlink() || kind.is_hard_link() {
+                if let Ok(Some(target)) = entry.link_name() {
+                    if let Some(t) = target.file_name() {
+                        links.push((name, t.to_string_lossy().to_string()));
+                    }
+                }
+                continue;
+            }
+            if !kind.is_file() {
+                continue;
+            }
+            let mut out = fs::File::create(dir.join(&name)).map_err(|e| e.to_string())?;
+            std::io::copy(&mut entry, &mut out).map_err(|e| e.to_string())?;
+        }
+        for (link, target) in links {
+            let _ = fs::copy(dir.join(&target), dir.join(&link));
+        }
     }
 
     #[cfg(unix)]
@@ -155,7 +204,11 @@ async fn install_engine(app: &AppHandle) -> Result<PathBuf, String> {
         }
     }
 
-    if exe.exists() { Ok(exe) } else { Err("The AI engine didn't install correctly".into()) }
+    if exe.exists() {
+        Ok(exe)
+    } else {
+        Err("The AI engine didn't install correctly".into())
+    }
 }
 
 /// Starts the engine (if it isn't running) with the model, and waits until it answers.
@@ -164,7 +217,8 @@ async fn ensure_engine(app: &AppHandle) -> Result<(), String> {
         return Ok(());
     }
     let exe = install_engine(app).await?;
-    let model = read_settings(app).model_repo;
+    // Older settings files may still hold a quantization tag, which the model name no longer needs.
+    let model = read_settings(app).model_repo.replace(":Q4_K_M", "");
     let port = PORT.to_string();
 
     emit_status(app, "setup", "Loading the model (first run downloads about 1 GB)");
@@ -175,9 +229,9 @@ async fn ensure_engine(app: &AppHandle) -> Result<(), String> {
         "--port", port.as_str(),
         "--reasoning", "off",
         "--temp", "0",
-        "-c", "2048",
+        "-c", "4096",
         "-t", "2",
-        "-np", "1",
+        "-np", "2",
     ])
     .current_dir(exe.parent().unwrap_or(&exe))
     .stdout(Stdio::null())
@@ -228,7 +282,11 @@ async fn ask(
 
     if !stream {
         let v: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
-        return Ok(v["choices"][0]["message"]["content"].as_str().unwrap_or("").trim().to_string());
+        return Ok(v["choices"][0]["message"]["content"]
+            .as_str()
+            .unwrap_or("")
+            .trim()
+            .to_string());
     }
 
     // Stream the answer word by word to the window as it is written.
@@ -258,33 +316,37 @@ async fn ask(
 
 #[tauri::command]
 async fn web_search(app: AppHandle, query: String) -> Result<String, String> {
-    let key = read_settings(&app)
-        .brave_key
-        .trim()
-        .to_string();
+    let key = read_settings(&app).tavily_key.trim().to_string();
     if key.is_empty() {
-        return Err("Add a Brave Search key in Settings first.".into());
+        return Err("Ajoute ta clé Tavily dans les réglages pour utiliser la recherche web.".into());
     }
-    let v: serde_json::Value = reqwest::Client::new()
-        .get("https://api.search.brave.com/res/v1/web/search")
-        .header("X-Subscription-Token", key)
-        .header("Accept", "application/json")
-        .query(&[("q", query.as_str()), ("count", "5")])
+    let resp = reqwest::Client::new()
+        .post("https://api.tavily.com/search")
+        .bearer_auth(key)
+        .json(&serde_json::json!({
+            "query": query,
+            "max_results": 5,
+            "search_depth": "basic"
+        }))
         .send()
-        .await
-        .map_err(|e| e.to_string())?
-        .json()
         .await
         .map_err(|e| e.to_string())?;
 
+    let status = resp.status();
+    let v: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+    if !status.is_success() {
+        let msg = v["detail"]["error"].as_str().or(v["detail"].as_str()).unwrap_or("erreur inconnue");
+        return Err(format!("Tavily : {msg}"));
+    }
+
     let mut out = String::new();
-    if let Some(results) = v["web"]["results"].as_array() {
-        for r in results.iter().take(5) {
+    if let Some(items) = v["results"].as_array() {
+        for r in items.iter().take(5) {
             out.push_str(&format!(
                 "- {} ({}): {}\n",
                 r["title"].as_str().unwrap_or(""),
                 r["url"].as_str().unwrap_or(""),
-                r["description"].as_str().unwrap_or("")
+                r["content"].as_str().unwrap_or("")
             ));
         }
     }

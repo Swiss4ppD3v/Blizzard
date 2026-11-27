@@ -1,6 +1,6 @@
 {
   "name": "blizzard",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "A local study tutor that tracks how well you understand.",
   "license": "MIT",

@@ -1,174 +1,180 @@
 # ❄ Blizzard
 
-**A private study tutor for your computer.** Ask anything, explain it back in your own words, and Blizzard tracks how well you understand each topic.
+**Un tuteur d'étude qui tourne sur ton ordinateur.** Pose tes questions, explique avec tes mots, et Blizzard suit ta compréhension de chaque sujet.
 
-Blizzard runs entirely on your machine. Your questions and chats stay on your computer. There's no account to create and no subscription.
+Blizzard fonctionne entièrement en local : tes conversations et tes fichiers restent sur ton ordinateur. Il n'y a ni compte à créer ni abonnement.
 
-![Blizzard screenshot](docs/screenshot.png)
-
-> Add a screenshot at `docs/screenshot.png` to show the app here.
+Version actuelle : **1.0.1**
 
 ---
 
-## Features
+## Fonctionnalités
 
-- **Chat about anything.** Maths, history, languages, code: any subject you want to study.
-- **Understanding tracker.** Blizzard reads what you explain and shows a score for each topic. The score rises only from your own correct explanations, not from the tutor's, and it moves gradually.
-- **Streaming answers.** Replies appear word by word as they're written, so you're never staring at a blank screen.
-- **Optional web search.** Turn it on for a question and Blizzard looks up current information before answering.
-- **Works offline.** Once the model is downloaded, web search is the only feature that needs an internet connection.
-- **Light on your computer.** The AI engine runs at low priority, so your other apps stay smooth.
-- **Windows, macOS and Linux.**
+- **Chat avec une IA locale.** Le modèle LFM3-Omni-2B tourne sur ton processeur, sans envoi de données sur internet.
+- **Réponses en direct.** Le texte apparaît au fur et à mesure qu'il est écrit.
+- **Raisonnement visible.** L'IA présente ses étapes sous « Voir son raisonnement », repliées par défaut.
+- **Suivi de compréhension.** Blizzard mesure ta compréhension d'après ce que tu expliques correctement. Les explications du tuteur ne comptent pas. Le cercle et les barres se mettent à jour en douceur.
+- **Dossiers de chats.** Range tes chats par matière : crée un dossier, donne-lui un nom, choisis sa couleur.
+- **Fichiers de cours.** Ajoute des fichiers `.txt`, `.md`, `.csv`, `.json` ou du code à un chat. L'IA s'appuie dessus pour répondre.
+- **Recherche web (optionnelle).** Active-la pour une question et Blizzard cherche sur internet avant de répondre.
+- **Léger pour ton ordinateur.** Le moteur tourne à faible priorité, pour que tes autres applications restent fluides.
 
 ---
 
-## Download and install
+## Télécharger et installer
 
-Go to the **[Releases](../../releases)** page and download the file for your system:
+Va sur la page **[Releases](../../releases)** et télécharge le fichier de ton système :
 
-| System | File to download | How to open it |
+| Système | Fichier à télécharger | Comment l'ouvrir |
 |---|---|---|
-| Windows | `Blizzard_x.y.z_x64-setup.exe` or `.msi` | Double-click, then follow the installer. |
-| macOS | `Blizzard_x.y.z_aarch64.dmg` (Apple Silicon) or `_x64.dmg` (Intel) | Open the file, drag Blizzard into Applications. |
-| Linux | `Blizzard_x.y.z_amd64.AppImage` or `.deb` | AppImage: make it executable, then double-click. `.deb`: install with your package manager. |
+| Windows | `Blizzard_1.0.1_x64-setup.exe` ou `.msi` | Double-clique, puis suis l'installeur. |
+| macOS | `Blizzard_1.0.1_aarch64.dmg` (Apple Silicon) ou `_x64.dmg` (Intel) | Ouvre le fichier et glisse Blizzard dans Applications. |
+| Linux | `Blizzard_1.0.1_amd64.AppImage` ou `.deb` | AppImage : rends-le exécutable, puis double-clique. `.deb` : installe-le avec ton gestionnaire de paquets. |
 
-**Security warnings.** Blizzard isn't code-signed yet, so your system may warn you the first time:
+**Avertissement de sécurité.** Blizzard n'est pas encore signé, donc ton système peut afficher un avertissement la première fois :
 
-- **Windows:** click **More info**, then **Run anyway**.
-- **macOS:** right-click Blizzard, choose **Open**, then **Open** again. If macOS still blocks it, go to System Settings, then Privacy & Security, and click **Open Anyway**.
-- **Linux:** no warning normally appears.
+- **Windows :** clique sur **Informations complémentaires**, puis **Exécuter quand même**.
+- **macOS :** fais un clic droit sur Blizzard, choisis **Ouvrir**, puis **Ouvrir** à nouveau. Si macOS bloque encore, va dans Réglages Système, Confidentialité et sécurité, puis clique sur **Ouvrir quand même**.
 
-### What your computer needs
+**Configuration minimale :** 8 Go de RAM (16 Go conseillés), environ 2 Go d'espace disque libre, et une connexion internet pour le premier lancement.
 
-- 8 GB of RAM or more (16 GB is comfortable)
-- About 2 GB of free disk space
-- An internet connection for the first launch only
+**Premier lancement.** Blizzard télécharge le moteur d'IA et le modèle, environ 1 Go. Ça prend quelques minutes, une seule fois. Le message en bas de la fenêtre indique l'étape. Attends **Prêt** avant de poser ta première question.
 
 ---
 
-## First launch
+## Lancer Blizzard depuis le code source
 
-The first time you open Blizzard, it sets itself up:
-
-1. It downloads the AI engine (llama.cpp) for your system.
-2. It downloads the **LFM3-Omni-2B** model, about 1 GB, from Hugging Face.
-
-This takes a few minutes and happens once. After that, Blizzard opens straight into the chat. You'll see progress messages at the bottom of the window.
-
----
-
-## How to use it
-
-### Start a chat
-
-Press **+ New chat** in the sidebar, then type your question and press **Enter**. Use **Shift + Enter** for a new line.
-
-### Study by explaining
-
-The most useful way to study with Blizzard is to explain things back:
-
-1. Ask about a topic, for example "how does photosynthesis work?"
-2. Read the answer.
-3. Explain it in your own words, for example "plants use light to turn water and CO₂ into sugar and oxygen."
-4. Blizzard corrects mistakes gently and asks follow-up questions.
-
-As you explain correctly, the **Understanding** panel on the right moves up, topic by topic. Each topic shows a short quote from what you said, so you can see why its score changed.
-
-### Turn the understanding panel on or off
-
-Open **Settings** and tick or untick **Track my understanding**. When it's off, the panel disappears and the chat fills the window.
-
-### Use web search
-
-Web search needs a free Brave Search key:
-
-1. Go to **brave.com/search/api**, create a free account, and choose the free plan for the Search API. Check the plan page for its current monthly limit.
-2. Copy the API key from your dashboard.
-3. In Blizzard, open **Settings**, paste the key, and press **Save**.
-4. Press **Web search: off** in the chat box to turn it on. It turns back off when you close Blizzard, so you choose when to search.
-
-Only your search query leaves your computer. Your chats and the rest of your conversation stay local.
-
-### Switch the model
-
-The **Model** dropdown in the sidebar lists the available models. Blizzard currently ships with one, LFM3-Omni-2B. When more are added, choose one here. The engine restarts with the new model.
-
-### Delete a chat
-
-Open the chat, then press **Delete chat** at the top right. Deleted chats can't be recovered.
-
----
-
-## Privacy
-
-- Your chats, settings, and search key are stored only in Blizzard's data folder on your computer.
-- The AI model runs on your computer. Blizzard doesn't send your questions anywhere.
-- Web search is the only feature that sends anything over the internet, and only when you turn it on.
-
-Blizzard's data folder is:
-
-- Windows: `%APPDATA%\io.github.swiss4ppd3v.blizzard`
-- macOS: `~/Library/Application Support/io.github.swiss4ppd3v.blizzard`
-- Linux: `~/.local/share/io.github.swiss4ppd3v.blizzard`
-
-To reset Blizzard completely, close it and delete that folder.
-
----
-
-## Troubleshooting
-
-**The status says "The AI didn't start in time."**
-Close Blizzard, wait a few seconds, and open it again. The first launch can take several minutes on a slow connection, because the model is large.
-
-**The answers are slow.**
-Close heavy programs such as video players and browser tabs you don't need. Blizzard uses about 2 CPU cores while it writes an answer. If your computer has less than 8 GB of RAM, close other apps before studying.
-
-**Web search says "Add a Brave Search key first."**
-Open Settings and paste your key, as described above.
-
-**Web search says it failed.**
-Check that your key is correct and that you haven't used up the free monthly limit on your Brave dashboard.
-
-**Nothing happens after the first launch.**
-Check your internet connection, then close and reopen Blizzard. If the problem continues, please open an issue on this page and include the message shown at the bottom of the window.
-
----
-
-## Build from source
-
-Developers can build Blizzard themselves. You need [Rust](https://rustup.rs) and Python 3.
+Cette méthode sert à tester ou à développer. Elle demande Python 3 et Rust. Dans tous les cas, commence par récupérer le projet :
 
 ```bash
-git clone https://github.com/Swiss4ppD3v/blizzard.git
-cd blizzard
-python3 launch.py          # builds once, then opens Blizzard
-python3 launch.py --dev    # run in development mode
-python3 launch.py --build  # rebuild after making changes
+git clone https://github.com/Swiss4ppD3v/Blizzard.git
+cd Blizzard
 ```
 
-On Linux, install the system libraries first. On Debian or Ubuntu:
+Puis lance le script de démarrage. Il vérifie ce qui manque, compile Blizzard une fois, puis l'ouvre :
 
 ```bash
-sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+python3 launch.py          # compile une fois, puis ouvre Blizzard
+python3 launch.py --dev    # mode développement, affiche les erreurs
+python3 launch.py --build  # recompile après une modification
 ```
 
-The project is built with [Tauri 2](https://tauri.app). The interface is in `src/index.html`, and the Rust backend is in `src-tauri/src/main.rs`.
+### Windows
 
-### Adding a model
+1. **Installe Python 3** depuis python.org. Coche « Add python.exe to PATH ».
+2. **Installe Rust** : télécharge `rustup-init.exe` sur rustup.rs et suis les étapes par défaut.
+3. **Installe les outils de compilation C++** : dans Visual Studio Installer, coche « Développement desktop en C++ », ou installe les « Build Tools for Visual Studio ».
+4. Ouvre **PowerShell** dans le dossier du projet, puis lance :
+   ```powershell
+   py launch.py --dev
+   ```
+   Si `py` n'est pas reconnu, utilise `python launch.py --dev`.
 
-Models are listed in the `MODELS` array near the top of `src/index.html`. Each entry needs a display name and a Hugging Face repository in the form `owner/name:quantization`.
+WebView2 est déjà présent sur Windows 10 et 11 récents. Si la fenêtre ne s'ouvre pas, installe-le depuis le site de Microsoft.
+
+### macOS
+
+1. **Installe les outils Xcode** : ouvre le Terminal et lance `xcode-select --install`.
+2. **Installe Rust** :
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   ```
+   Ferme et rouvre le Terminal ensuite.
+3. Python 3 est généralement déjà présent. Sinon, installe-le depuis python.org.
+4. Dans le dossier du projet :
+   ```bash
+   python3 launch.py --dev
+   ```
+
+### Linux
+
+1. **Installe les bibliothèques système.**
+   - Debian ou Ubuntu :
+     ```bash
+     sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
+     ```
+   - Fedora :
+     ```bash
+     sudo dnf install webkit2gtk4.1-devel libappindicator-gtk3-devel librsvg2-devel patchelf openssl-devel
+     ```
+2. **Installe Rust :**
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   ```
+   Ajoute ensuite Rust à ton terminal. Avec fish : `fish_add_path ~/.cargo/bin`. Avec bash ou zsh, ferme et rouvre le terminal.
+3. Dans le dossier du projet :
+   ```bash
+   python3 launch.py --dev
+   ```
+
+Au premier lancement, la compilation peut durer plusieurs minutes. Les lancements suivants sont beaucoup plus rapides.
 
 ---
 
-## Credits
+## Recherche web (optionnelle)
 
-- **[LFM3-Omni-2B](https://huggingface.co/LiquidAI/LFM3-Omni-2B-GGUF)** by Liquid AI. The model is downloaded from Hugging Face and remains under its own license, LFM 1.0. Blizzard doesn't include the model file.
-- **[llama.cpp](https://github.com/ggml-org/llama.cpp)**, the engine that runs the model (MIT license).
-- **[Tauri](https://tauri.app)**, the framework that makes Blizzard a desktop app (MIT or Apache 2.0).
-- **[Brave Search API](https://brave.com/search/api)**, used for optional web search.
+Pour activer la recherche web, il faut une clé API gratuite de Tavily :
+
+1. Crée un compte sur **tavily.com** (sans carte bancaire). Tu obtiens 1 000 recherches par mois.
+2. Copie ta clé API depuis le tableau de bord.
+3. Dans Blizzard, ouvre **Réglages**, colle la clé dans **Recherche web (Tavily)**, puis clique sur **Enregistrer**.
+4. Active **Recherche web** dans le chat pour les questions qui en ont besoin.
+
+Seul le texte de ta question part sur internet, et uniquement quand tu actives la recherche. Ta clé reste sur ton ordinateur.
 
 ---
 
-## License
+## Confidentialité
 
-Blizzard is released under the [MIT License](LICENSE). You're free to use, copy, modify, and share it, including for commercial use, as long as the copyright notice stays in place.
+- Tes chats, tes fichiers, tes réglages et ta clé sont stockés uniquement dans le dossier de données de Blizzard sur ton ordinateur.
+- Le modèle d'IA tourne sur ton ordinateur. Blizzard n'envoie aucune question à un serveur.
+- La recherche web est le seul envoi vers internet, et seulement quand tu l'actives.
+
+Dossier de données :
+
+- Windows : `%APPDATA%\io.github.swiss4ppd3v.blizzard`
+- macOS : `~/Library/Application Support/io.github.swiss4ppd3v.blizzard`
+- Linux : `~/.local/share/io.github.swiss4ppd3v.blizzard`
+
+Pour tout réinitialiser, ferme Blizzard puis supprime ce dossier.
+
+---
+
+## Dépannage
+
+**Le message dit « Le modèle ne démarre pas à temps ».**
+Ferme Blizzard, attends quelques secondes, puis rouvre-le. Le premier téléchargement peut être long sur une connexion lente.
+
+**Les réponses sont lentes.**
+Ferme les programmes lourds comme les lecteurs vidéo et les onglets inutiles. Blizzard utilise environ deux cœurs du processeur pendant qu'il écrit une réponse.
+
+**La recherche web dit qu'il faut une clé.**
+Ouvre Réglages et colle ta clé Tavily, comme décrit plus haut.
+
+**La compilation échoue.**
+Vérifie que Rust et les bibliothèques système de ton système sont installés. Copie les dernières lignes d'erreur et ouvre une issue sur ce dépôt.
+
+---
+
+## Développement
+
+L'interface est dans `src/index.html`. Le backend Rust, qui gère le moteur d'IA, les réponses et la recherche, est dans `src-tauri/src/main.rs`. Le projet utilise [Tauri 2](https://tauri.app).
+
+### Ajouter un modèle
+
+Les modèles sont listés dans la constante `MODELS` au début de `src/index.html`. Chaque entrée contient un nom affiché et un dépôt Hugging Face, par exemple `LiquidAI/LFM3-Omni-2B-GGUF`.
+
+---
+
+## Crédits
+
+- **[LFM3-Omni-2B](https://huggingface.co/LiquidAI/LFM3-Omni-2B-GGUF)** par Liquid AI. Le modèle est téléchargé depuis Hugging Face et reste sous sa propre licence, LFM 1.0. Blizzard ne contient pas le fichier du modèle.
+- **[llama.cpp](https://github.com/ggml-org/llama.cpp)**, le moteur qui fait tourner le modèle (licence MIT).
+- **[Tauri](https://tauri.app)**, le framework qui fait de Blizzard une application de bureau (licence MIT ou Apache 2.0).
+- **[Tavily](https://tavily.com)**, utilisé pour la recherche web optionnelle.
+
+---
+
+## Licence
+
+Blizzard est distribué sous licence [MIT](LICENSE). Tu peux l'utiliser, le copier, le modifier et le partager, y compris à des fins commerciales, à condition de conserver la notice de copyright.

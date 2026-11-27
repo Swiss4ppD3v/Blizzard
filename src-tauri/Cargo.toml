@@ -1,6 +1,6 @@
 [package]
 name = "blizzard"
-version = "1.0.0"
+version = "1.0.1"
 description = "A local study tutor that tracks how well you understand."
 authors = ["Swiss4ppD3v"]
 license = "MIT"
@@ -17,6 +17,8 @@ reqwest = { version = "0.12", features = ["json", "stream"] }
 futures-util = "0.3"
 tokio = { version = "1", features = ["time"] }
 zip = { version = "2", default-features = false, features = ["deflate"] }
+flate2 = "1"
+tar = "0.4"
 
 [profile.release]
 codegen-units = 1
